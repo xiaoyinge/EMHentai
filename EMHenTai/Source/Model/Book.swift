@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Book: Hashable {
+struct Book: Hashable, Sendable {
     let gid: Int
     let title: String?
     let titleJpn: String?

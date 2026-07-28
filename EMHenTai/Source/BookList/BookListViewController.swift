@@ -178,67 +178,65 @@ extension BookListViewController {
 // MARK: AlertVC
 extension BookListViewController {
     private func showAlertVC(with book: Book) {
-        Task {
-            guard presentedViewController == nil else { return }
-            let vc = UIAlertController(title: "", message: book.showTitle, preferredStyle: .alert)
-            
-            if !DBManager.shared.contains(gid: book.gid, of: .download) {
+        guard presentedViewController == nil else { return }
+        let vc = UIAlertController(title: "", message: book.showTitle, preferredStyle: .alert)
+        
+        if !DBManager.shared.contains(gid: book.gid, of: .download) {
+            vc.addAction(UIAlertAction(title: "action.download".localized, style: .default, handler: { _ in
+                DownloadManager.shared.download(book)
+                DBManager.shared.insert(book: book, of: .download)
+            }))
+        } else {
+            let state = DownloadManager.shared.downloadState(of: book)
+            switch state {
+            case .before, .suspend:
                 vc.addAction(UIAlertAction(title: "action.download".localized, style: .default, handler: { _ in
                     DownloadManager.shared.download(book)
-                    DBManager.shared.insert(book: book, of: .download)
                 }))
-            } else {
-                let state = await DownloadManager.shared.downloadState(of: book)
-                switch state {
-                case .before, .suspend:
-                    vc.addAction(UIAlertAction(title: "action.download".localized, style: .default, handler: { _ in
-                        DownloadManager.shared.download(book)
-                    }))
-                case .ing:
-                    vc.addAction(UIAlertAction(title: "action.pause".localized, style: .default, handler: { _ in
-                        DownloadManager.shared.suspend(book)
-                    }))
-                case .finish:
-                    break
-                }
-                
-                if state != .before && type != .history {
-                    vc.addAction(UIAlertAction(title: "action.delete_download".localized, style: .default, handler: { _ in
-                        DownloadManager.shared.remove(book)
-                        DBManager.shared.remove(book: book, of: .download)
-                    }))
-                }
+            case .ing:
+                vc.addAction(UIAlertAction(title: "action.pause".localized, style: .default, handler: { _ in
+                    DownloadManager.shared.suspend(book)
+                }))
+            case .finish:
+                break
             }
             
-            if type == .history {
-                vc.addAction(UIAlertAction(title: "action.delete_history".localized, style: .default, handler: { _ in
-                    if !DBManager.shared.contains(gid: book.gid, of: .download) {
-                        DownloadManager.shared.remove(book)
-                    }
-                    DBManager.shared.remove(book: book, of: .history)
+            if state != .before && type != .history {
+                vc.addAction(UIAlertAction(title: "action.delete_download".localized, style: .default, handler: { _ in
+                    DownloadManager.shared.remove(book)
+                    DBManager.shared.remove(book: book, of: .download)
                 }))
             }
-            
-            if let url = URL(string: book.webURLString(with: SettingManager.shared.isLoginSubject.value ? .ExHentai : .EHentai)) {
-                vc.addAction(UIAlertAction(title: "action.open_webpage".localized, style: .default, handler: { [weak self] _ in
-                    guard let self else { return }
-                    var image: UIImage?
-                    if let thumb = book.thumb {
-                        image = ImageCache.default.retrieveImageInMemoryCache(forKey: thumb)
-                    }
-                    navigationController?.pushViewController(WebViewController(url: url, shareItem: (book.showTitle, image)), animated: true)
-                }))
-            }
-            
-            if !book.tags.isEmpty {
-                vc.addAction(UIAlertAction(title: "action.search_tags".localized, style: .default, handler: { [weak self] _ in
-                    guard let self else { return }
-                    navigationController?.pushViewController(TagViewController(book: book), animated: true)
-                }))
-            }
-            
-            vc.addAction(UIAlertAction(title: "action.dismiss".localized, style: .cancel))
-            present(vc, animated: true)
         }
+        
+        if type == .history {
+            vc.addAction(UIAlertAction(title: "action.delete_history".localized, style: .default, handler: { _ in
+                if !DBManager.shared.contains(gid: book.gid, of: .download) {
+                    DownloadManager.shared.remove(book)
+                }
+                DBManager.shared.remove(book: book, of: .history)
+            }))
+        }
+        
+        if let url = URL(string: book.webURLString(with: SettingManager.shared.isLoginSubject.value ? .ExHentai : .EHentai)) {
+            vc.addAction(UIAlertAction(title: "action.open_webpage".localized, style: .default, handler: { [weak self] _ in
+                guard let self else { return }
+                var image: UIImage?
+                if let thumb = book.thumb {
+                    image = ImageCache.default.retrieveImageInMemoryCache(forKey: thumb)
+                }
+                navigationController?.pushViewController(WebViewController(url: url, shareItem: (book.showTitle, image)), animated: true)
+            }))
+        }
+        
+        if !book.tags.isEmpty {
+            vc.addAction(UIAlertAction(title: "action.search_tags".localized, style: .default, handler: { [weak self] _ in
+                guard let self else { return }
+                navigationController?.pushViewController(TagViewController(book: book), animated: true)
+            }))
+        }
+        
+        vc.addAction(UIAlertAction(title: "action.dismiss".localized, style: .cancel))
+        present(vc, animated: true)
     }
 }

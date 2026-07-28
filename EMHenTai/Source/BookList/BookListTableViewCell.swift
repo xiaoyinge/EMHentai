@@ -125,22 +125,21 @@ final class BookListTableViewCell: UITableViewCell {
     }
     
     private func updateProgress() {
-        Task {
-            guard let book, DBManager.shared.contains(gid: book.gid, of: .download) else {
-                progressLabel.text = ""
-                return
-            }
-            
-            switch await DownloadManager.shared.downloadState(of: book) {
-            case .before:
-                progressLabel.text = ""
-            case .ing:
-                progressLabel.text = "cell.downloading".localized + "\(book.downloadedImgCount)/\(book.fileCount)"
-            case .suspend:
-                progressLabel.text = "cell.paused".localized + "\(book.downloadedImgCount)/\(book.fileCount)"
-            case .finish:
-                progressLabel.text = "cell.downloaded".localized
-            }
+        guard let book, DBManager.shared.contains(gid: book.gid, of: .download) else {
+            progressLabel.text = ""
+            return
+        }
+        
+        let downloadedImgCount = book.downloadedImgCount
+        switch DownloadManager.shared.downloadState(of: book, downloadedImgCount: downloadedImgCount) {
+        case .before:
+            progressLabel.text = ""
+        case .ing:
+            progressLabel.text = "cell.downloading".localized + "\(downloadedImgCount)/\(book.fileCount)"
+        case .suspend:
+            progressLabel.text = "cell.paused".localized + "\(downloadedImgCount)/\(book.fileCount)"
+        case .finish:
+            progressLabel.text = "cell.downloaded".localized
         }
     }
     

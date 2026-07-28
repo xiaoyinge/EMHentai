@@ -10,7 +10,10 @@ import Combine
 import Foundation
 import Kingfisher
 
-final actor DownloadManager {
+/// The manager itself lives on the main actor: it only bookkeeps running tasks and publishes
+/// events the UI consumes. The networking and file work stays in `nonisolated` methods.
+@MainActor
+final class DownloadManager {
     // 整个本子的下载状态
     enum State {
         case before
@@ -21,61 +24,58 @@ final actor DownloadManager {
     
     static let shared = DownloadManager()
     
-    nonisolated let downloadStateChangedSubject = PassthroughSubject<(book: Book, state: State), Never>()
-    nonisolated let downloadPageProgressSubject = PassthroughSubject<(book: Book, index: Int, progress: Progress), Never>()
-    nonisolated let downloadPageSuccessSubject = PassthroughSubject<(book: Book, index: Int), Never>()
+    let downloadStateChangedSubject = PassthroughSubject<(book: Book, state: State), Never>()
+    let downloadPageProgressSubject = PassthroughSubject<(book: Book, index: Int, progress: Double), Never>()
+    let downloadPageSuccessSubject = PassthroughSubject<(book: Book, index: Int), Never>()
     
     private init() {}
     private let groupTotalImgNum = 40
     private var taskMap = [Int: Task<Void, Never>]()
     
-    nonisolated func download(_ book: Book) {
-        Task { await checkAndDownload(book) }
-    }
-    
-    private func checkAndDownload(_ book: Book) {
+    func download(_ book: Book) {
         guard case let state = downloadState(of: book), state != .ing && state != .finish else { return }
         
         try? FileManager.default.createDirectory(at: URL(fileURLWithPath: book.folderPath), withIntermediateDirectories: true)
         
         taskMap[book.gid] = Task {
-            await startDownload(book)
-            taskMap[book.gid] = nil
-            downloadStateChangedSubject.send((book, downloadState(of: book)))
+            await self.startDownload(book)
+            self.taskMap[book.gid] = nil
+            self.downloadStateChangedSubject.send((book, self.downloadState(of: book)))
         }
         
         downloadStateChangedSubject.send((book, .ing))
     }
     
-    nonisolated func suspend(_ book: Book) {
-        Task { await privateSuspend(book) }
-    }
-    
-    nonisolated func remove(_ book: Book) {
-        Task { await privateRemove(book) }
-    }
-    
-    private func privateSuspend(_ book: Book) {
+    func suspend(_ book: Book) {
         taskMap[book.gid]?.cancel()
         taskMap[book.gid] = nil
         downloadStateChangedSubject.send((book, .suspend))
     }
     
-    private func privateRemove(_ book: Book) {
+    func remove(_ book: Book) {
         taskMap[book.gid]?.cancel()
         taskMap[book.gid] = nil
-        try? FileManager.default.removeItem(atPath: book.folderPath)
-        downloadStateChangedSubject.send((book, .before))
+        Task {
+            await Self.removeFolder(of: book)
+            self.downloadStateChangedSubject.send((book, .before))
+        }
     }
     
-    func downloadState(of book: Book) -> State {
-        if book.downloadedImgCount == book.fileCount + 1 {
+    /// Pass `downloadedImgCount` when the caller already enumerated the folder, so a single
+    /// `updateProgress` pass doesn't walk the same directory several times on the main thread.
+    func downloadState(of book: Book, downloadedImgCount: Int? = nil) -> State {
+        let downloadedImgCount = downloadedImgCount ?? book.downloadedImgCount
+        if downloadedImgCount == book.fileCount + 1 {
             return .finish
         } else if taskMap[book.gid] != nil {
             return .ing
         } else {
-            return book.downloadedImgCount == 0 ? .before : .suspend
+            return downloadedImgCount == 0 ? .before : .suspend
         }
+    }
+    
+    private nonisolated static func removeFolder(of book: Book) async {
+        try? FileManager.default.removeItem(atPath: book.folderPath)
     }
     
     private nonisolated func startDownload(_ book: Book) async {
@@ -97,9 +97,9 @@ final actor DownloadManager {
         let urlStream = AsyncStream<String> { continuation in
             Task {
                 await withTaskGroup(of: Void.self, body: { group in
-                    let groupNum = book.fileCount / groupTotalImgNum + (book.fileCount % groupTotalImgNum == 0 ? 0 : 1)
+                    let groupNum = book.fileCount / self.groupTotalImgNum + (book.fileCount % self.groupTotalImgNum == 0 ? 0 : 1)
                     for groupIndex in 0 ..< groupNum {
-                        guard checkGroupNeedRequest(of: book, groupIndex: groupIndex) else { continue }
+                        guard self.checkGroupNeedRequest(of: book, groupIndex: groupIndex) else { continue }
                         group.addTask {
                             let url = book.currentWebURLString + (groupIndex > 0 ? "?p=\(groupIndex)" : "") + "/?nw=session"
                             guard let value = try? await emSession.request(url, interceptor: RetryPolicy.downloadRetryPolicy).serializingString().value else { return }
@@ -128,16 +128,19 @@ final actor DownloadManager {
                     
                     guard let p = try? await emSession
                         .download(imgURL, interceptor: RetryPolicy.downloadRetryPolicy, to: { _, _ in (URL(fileURLWithPath: book.imagePath(at: imgIndex)), []) })
-                        .downloadProgress(queue: .main, closure: { [weak self] progress in
-                            guard let self else { return }
-                            downloadPageProgressSubject.send((book, imgIndex, progress))
+                        .downloadProgress(queue: .main, closure: { progress in
+                            // Alamofire delivers this on DispatchQueue.main, which is the main actor's executor.
+                            let fractionCompleted = progress.fractionCompleted
+                            MainActor.assumeIsolated {
+                                self.downloadPageProgressSubject.send((book, imgIndex, fractionCompleted))
+                            }
                         })
                             .serializingDownload(using: URLResponseSerializer())
                             .value,
                             FileManager.default.fileExists(atPath: p.path)
                     else { return }
                     
-                    Task { @DownloadManagerActor in
+                    await MainActor.run {
                         self.downloadPageSuccessSubject.send((book, imgIndex))
                     }
                 }
@@ -161,8 +164,3 @@ final actor DownloadManager {
 private extension RetryPolicy {
     static let downloadRetryPolicy = RetryPolicy(retryLimit: 6)
 }
-
-@globalActor private actor DownloadManagerActor {
-    static let shared = DownloadManagerActor()
-}
-

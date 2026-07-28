@@ -8,7 +8,10 @@
 import Alamofire
 import Combine
 
-final actor SearchManager {
+/// The manager itself lives on the main actor: it only tracks the in-flight task and publishes
+/// events the UI consumes. The request work stays in a `nonisolated` method.
+@MainActor
+final class SearchManager {
     enum SearchEvent {
         case start(info: SearchInfo)
         case finish(info: SearchInfo, result: Result<[Book], SearchManager.Error>)
@@ -24,15 +27,9 @@ final actor SearchManager {
     
     private var currentTask: Task<Void, Never>?
     
-    nonisolated let eventSubject = PassthroughSubject<SearchEvent, Never>()
+    let eventSubject = PassthroughSubject<SearchEvent, Never>()
     
-    nonisolated func searchWith(info: SearchInfo) {
-        Task { @SearchManagerActor in
-            await checkSearchWith(info: info)
-        }
-    }
-    
-    private func checkSearchWith(info: SearchInfo) {
+    func searchWith(info: SearchInfo) {
         guard info.lastGid.isEmpty || currentTask == nil else {
             return
         }
@@ -42,15 +39,15 @@ final actor SearchManager {
         currentTask = Task {
             guard !Task.isCancelled else { return }
             
-            eventSubject.send(.start(info: info))
+            self.eventSubject.send(.start(info: info))
             
-            let result = await startSearchWith(info: info)
+            let result = await self.startSearchWith(info: info)
             
             guard !Task.isCancelled else { return }
             
-            eventSubject.send(.finish(info: info, result: result))
+            self.eventSubject.send(.finish(info: info, result: result))
             
-            currentTask = nil
+            self.currentTask = nil
         }
     }
     
@@ -80,10 +77,6 @@ final actor SearchManager {
         
         return .success((value.gmetadata ?? []).compactMap({ Book($0) }))
     }
-}
-
-@globalActor private actor SearchManagerActor {
-    static let shared = SearchManagerActor()
 }
 
 private struct Gmetadata: Decodable {

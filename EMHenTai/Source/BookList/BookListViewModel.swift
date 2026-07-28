@@ -8,6 +8,7 @@
 import Combine
 import Foundation
 
+@MainActor
 final class BookListViewModel {
     @Published private(set) var books = [Book]()
     @Published private(set) var hint = BookListFooterView.HintType.empty

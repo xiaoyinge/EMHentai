@@ -11,7 +11,7 @@ import UIKit
 final class GalleryViewController: UICollectionViewController {
     private let book: Book
     private var isRotating = false
-    private var progressMap = [Int: Progress]()
+    private var progressMap = [Int: Double]()
     private var cancelBag = Set<AnyCancellable>()
     private var lastSeenPageIndex: Int {
         get { UserDefaults.standard.integer(forKey: "GalleryViewController_lastSeenPageIndex_\(book.gid)") }
@@ -48,8 +48,12 @@ final class GalleryViewController: UICollectionViewController {
     }
     
     deinit {
-        if !DBManager.shared.contains(gid: book.gid, of: .download) {
-            DownloadManager.shared.suspend(book)
+        // `deinit` is nonisolated, so hop to the main actor instead of touching the managers directly.
+        let book = book
+        Task { @MainActor in
+            if !DBManager.shared.contains(gid: book.gid, of: .download) {
+                DownloadManager.shared.suspend(book)
+            }
         }
     }
     
@@ -167,7 +171,7 @@ extension GalleryViewController {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: NSStringFromClass(GalleryCollectionViewCell.self), for: indexPath)
         if let cell = cell as? GalleryCollectionViewCell {
             cell.updateImageWith(filePath: book.imagePath(at: indexPath.row))
-            cell.updateProgress(progressMap[indexPath.row] ?? Progress())
+            cell.updateProgress(progressMap[indexPath.row] ?? 0)
             cell.tapBlock = { [weak self] in
                 guard let self else { return }
                 changeNavBarHidden()

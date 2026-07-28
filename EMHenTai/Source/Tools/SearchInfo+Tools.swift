@@ -19,7 +19,6 @@ extension SearchInfo {
     
     func saveDB() {
         if let data = try? JSONEncoder().encode(self) {
-            SearchInfo.currentSource = source
             UserDefaults.standard.set(data, forKey: SearchInfo.dbKey)
         }
     }

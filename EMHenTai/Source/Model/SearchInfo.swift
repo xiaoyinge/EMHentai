@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct SearchInfo: Codable {
+struct SearchInfo: Codable, Sendable {
     enum Source: String, CaseIterable, Codable {
         case EHentai = "https://e-hentai.org/"
         case ExHentai = "https://exhentai.org/"
@@ -40,7 +40,8 @@ struct SearchInfo: Codable {
     }
     
     static let dbKey = "EMHenTai.SearchInfo.dbKey"
-    static var currentSource = SearchInfo().source
+    /// Reads the persisted value on every access, so there is no global mutable state to synchronize.
+    static var currentSource: Source { SearchInfo().source }
     
     var keyWord = ""
     var source = Source.EHentai

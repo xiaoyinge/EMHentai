@@ -7,6 +7,7 @@
 
 import UIKit
 
+@MainActor
 protocol SearchVCItemDataSource {
     var searchItemTitle: String { get }
 }

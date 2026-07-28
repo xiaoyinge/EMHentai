@@ -9,6 +9,7 @@ import Combine
 import Kingfisher
 import WebKit
 
+@MainActor
 final class SettingManager {
     static let shared = SettingManager()
     
@@ -61,33 +62,49 @@ final class SettingManager {
         }
     }
     
-    func calculateUsedDiskSize() async -> (historySize: Int, downloadSize: Int, otherSize: Int) {
+    /// `nonisolated` on purpose: walking the download folder is slow and must not run on the main actor.
+    nonisolated func calculateUsedDiskSize() async -> (historySize: Int, downloadSize: Int, otherSize: Int) {
         var otherSize = Int((try? KingfisherManager.shared.cache.diskStorage.totalSize()) ?? 0)
         guard let folders = try? FileManager.default.contentsOfDirectory(atPath: Book.downloadFolderPath), !folders.isEmpty else {
             return (0, 0, otherSize)
         }
         
+        let (downloadGids, historyGids) = await Self.storedGids()
+        
         let size = folders.compactMap({ Int($0) }).reduce(into: (0, 0)) {
             let folderSize = FileManager.default.folderSizeAt(path: Book.downloadFolderPath + "/\($1)")
-            if DBManager.shared.contains(gid: $1, of: .download) { $0.1 += folderSize }
-            else if DBManager.shared.contains(gid: $1, of: .history) { $0.0 += folderSize }
+            if downloadGids.contains($1) { $0.1 += folderSize }
+            else if historyGids.contains($1) { $0.0 += folderSize }
             else { otherSize += folderSize }
         }
         
         return (size.0, size.1, otherSize)
     }
     
-    func clearOtherData() async {
+    /// `nonisolated` on purpose: deleting the leftover folders is slow and must not run on the main actor.
+    nonisolated func clearOtherData() async {
         await KingfisherManager.shared.cache.clearDiskCache()
         guard let folders = try? FileManager.default.contentsOfDirectory(atPath: Book.downloadFolderPath), !folders.isEmpty else {
             return
         }
+        
+        let (downloadGids, historyGids) = await Self.storedGids()
+        
         folders.compactMap({ Int($0) }).forEach {
             let path = Book.downloadFolderPath + "/\($0)"
-            if !DBManager.shared.contains(gid: $0, of: .download) && !DBManager.shared.contains(gid: $0, of: .history) {
+            if !downloadGids.contains($0) && !historyGids.contains($0) {
                 try? FileManager.default.removeItem(atPath: path)
             }
         }
+    }
+    
+    @MainActor
+    private static func storedGids() async -> (download: Set<Int>, history: Set<Int>) {
+        await DBManager.shared.waitUntilLoaded()
+        return (
+            Set(DBManager.shared.books(of: .download).map(\.gid)),
+            Set(DBManager.shared.books(of: .history).map(\.gid))
+        )
     }
     
     private func createCookies(name: String, value: String) -> [HTTPCookie] {

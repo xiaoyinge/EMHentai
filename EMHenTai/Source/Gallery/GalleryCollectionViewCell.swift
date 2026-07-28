@@ -98,8 +98,8 @@ final class GalleryCollectionViewCell: UICollectionViewCell {
         progressView.isHidden = imageView.image != nil
     }
     
-    func updateProgress(_ progress: Progress) {
-        progressView.progress = Float(progress.fractionCompleted)
+    func updateProgress(_ fractionCompleted: Double) {
+        progressView.progress = Float(fractionCompleted)
     }
 }
 

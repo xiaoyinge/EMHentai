@@ -17,7 +17,6 @@
 		7A1167932797D80B00C200CA /* BookListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1167922797D80B00C200CA /* BookListFooterView.swift */; };
 		7A1167952797DEA600C200CA /* Book+Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1167942797DEA600C200CA /* Book+Tools.swift */; };
 		7A1C12B027994BDD00ADD54E /* DBManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C12AF27994BDD00ADD54E /* DBManager.swift */; };
-		7A1C12B327995C5E00ADD54E /* EMDB.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C12B127995C5E00ADD54E /* EMDB.xcdatamodeld */; };
 		7A1C12B5279A8CC000ADD54E /* FileManager+Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C12B4279A8CC000ADD54E /* FileManager+Tools.swift */; };
 		7A1C12B7279A8EE400ADD54E /* Int+Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C12B6279A8EE400ADD54E /* Int+Tools.swift */; };
 		7A1F22FC2C572AFE00EFA75B /* AFSession+Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1F22FB2C572AFE00EFA75B /* AFSession+Tools.swift */; };
@@ -31,6 +30,7 @@
 		7A6C95CC27911E4600077093 /* GalleryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6C95CB27911E4600077093 /* GalleryViewController.swift */; };
 		7A6C95D127911E9A00077093 /* SettingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6C95D027911E9A00077093 /* SettingViewController.swift */; };
 		7A6C95D327911EB200077093 /* Book.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6C95D227911EB200077093 /* Book.swift */; };
+		7A6C95D52F90A00100077093 /* BookRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6C95D42F90A00100077093 /* BookRecord.swift */; };
 		7A6C95D727911EF300077093 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6C95D627911EF300077093 /* DownloadManager.swift */; };
 		7AB967F5279117CC0006466A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB967F4279117CC0006466A /* AppDelegate.swift */; };
 		7AB967FE279117CD0006466A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7AB967FD279117CD0006466A /* Assets.xcassets */; };
@@ -58,7 +58,6 @@
 		7A1167922797D80B00C200CA /* BookListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookListFooterView.swift; sourceTree = "<group>"; };
 		7A1167942797DEA600C200CA /* Book+Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Book+Tools.swift"; sourceTree = "<group>"; };
 		7A1C12AF27994BDD00ADD54E /* DBManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBManager.swift; sourceTree = "<group>"; };
-		7A1C12B227995C5E00ADD54E /* EMDB.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = EMDB.xcdatamodel; sourceTree = "<group>"; };
 		7A1C12B4279A8CC000ADD54E /* FileManager+Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileManager+Tools.swift"; sourceTree = "<group>"; };
 		7A1C12B6279A8EE400ADD54E /* Int+Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Int+Tools.swift"; sourceTree = "<group>"; };
 		7A1F22FB2C572AFE00EFA75B /* AFSession+Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AFSession+Tools.swift"; sourceTree = "<group>"; };
@@ -72,6 +71,7 @@
 		7A6C95CB27911E4600077093 /* GalleryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryViewController.swift; sourceTree = "<group>"; };
 		7A6C95D027911E9A00077093 /* SettingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingViewController.swift; sourceTree = "<group>"; };
 		7A6C95D227911EB200077093 /* Book.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Book.swift; sourceTree = "<group>"; };
+		7A6C95D42F90A00100077093 /* BookRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookRecord.swift; sourceTree = "<group>"; };
 		7A6C95D627911EF300077093 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		7AB967F1279117CC0006466A /* EMHenTai.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EMHenTai.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7AB967F4279117CC0006466A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -135,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				7A6C95D227911EB200077093 /* Book.swift */,
+				7A6C95D42F90A00100077093 /* BookRecord.swift */,
 				7AEDF3FD279177720064DB12 /* SearchInfo.swift */,
 			);
 			path = Model;
@@ -232,7 +233,6 @@
 				7A6665592F84D77100FDCE2C /* tag-260407.json */,
 				7AB967FF279117CD0006466A /* LaunchScreen.storyboard */,
 				7AB96802279117CD0006466A /* Info.plist */,
-				7A1C12B127995C5E00ADD54E /* EMDB.xcdatamodeld */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -334,10 +334,10 @@
 				7AB967F5279117CC0006466A /* AppDelegate.swift in Sources */,
 				7A1167812796887500C200CA /* GalleryCollectionViewCell.swift in Sources */,
 				7A6C95D327911EB200077093 /* Book.swift in Sources */,
+				7A6C95D52F90A00100077093 /* BookRecord.swift in Sources */,
 				7A3F29DC28E8907300F8CC6B /* SearchInfo+Tools.swift in Sources */,
 				7A1C12B5279A8CC000ADD54E /* FileManager+Tools.swift in Sources */,
 				7A6C95D727911EF300077093 /* DownloadManager.swift in Sources */,
-				7A1C12B327995C5E00ADD54E /* EMDB.xcdatamodeld in Sources */,
 				7A1167852796970F00C200CA /* SettingManager.swift in Sources */,
 				7A11677A27954C7A00C200CA /* BookListTableViewCell.swift in Sources */,
 				7A3F29DA28E8342E00F8CC6B /* BookListViewModel.swift in Sources */,
@@ -439,7 +439,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -498,7 +498,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -526,7 +526,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -558,7 +558,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -625,19 +625,6 @@
 			productName = Kingfisher;
 		};
 /* End XCSwiftPackageProductDependency section */
-
-/* Begin XCVersionGroup section */
-		7A1C12B127995C5E00ADD54E /* EMDB.xcdatamodeld */ = {
-			isa = XCVersionGroup;
-			children = (
-				7A1C12B227995C5E00ADD54E /* EMDB.xcdatamodel */,
-			);
-			currentVersion = 7A1C12B227995C5E00ADD54E /* EMDB.xcdatamodel */;
-			path = EMDB.xcdatamodeld;
-			sourceTree = "<group>";
-			versionGroupType = wrapper.xcdatamodel;
-		};
-/* End XCVersionGroup section */
 	};
 	rootObject = 7AB967E9279117CC0006466A /* Project object */;
 }

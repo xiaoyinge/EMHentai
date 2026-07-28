@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/yuman07/EMHentai?style=flat" alt="License"></a>
   <br>
   <img src="https://img.shields.io/badge/Swift-5-F05138?style=flat" alt="Swift 5">
-  <img src="https://img.shields.io/badge/iOS-17.0+-007AFF?style=flat" alt="iOS 17.0+">
+  <img src="https://img.shields.io/badge/iOS-18.0+-007AFF?style=flat" alt="iOS 18.0+">
   <img src="https://img.shields.io/badge/Platform-iPhone%20%7C%20iPad-999999?style=flat" alt="Platform">
 </p>
 
@@ -64,13 +64,13 @@ EMHenTai 是 [E-Hentai](https://e-hentai.org/) 的第三方 iOS 客户端，E-He
 
 > 考虑到 E-Hentai 内容的法律风险，不直接提供 IPA 安装包。需要使用 Xcode 从源码构建。
 
-### iOS (17.0+, arm64)
+### iOS (18.0+, arm64)
 
 #### 前置条件
 
 - 安装了 [Xcode](https://apps.apple.com/app/xcode/id497799835) 的 Mac（可从 Mac App Store 免费下载）
 - Apple ID（免费即可，用于代码签名）
-- 运行 iOS 17.0 或更高版本的 iPhone 或 iPad
+- 运行 iOS 18.0 或更高版本的 iPhone 或 iPad
 
 #### 安装步骤
 
@@ -139,7 +139,7 @@ EMHenTai 采用 **MVVM 架构**，配合一组**单例 Manager** 处理核心业
 
 **网络层** 使用 **Alamofire** 并配置自动重试策略。画廊元数据通过 E-Hentai 的 `gdata` JSON 接口获取，页面级图片 URL 则通过轻量级 **HTML 字符串解析** 提取。**Kingfisher** 负责图片缓存，并共享 Cookie 会话以支持 ExHentai。
 
-**持久化** 使用 **CoreData**，包含两个实体（`HistoryBook`、`DownloadBook`），共享相同的数据结构。`DBManager` 使用并发 `DispatchQueue` 配合 barrier 标志——读操作并发执行，写操作串行化——确保 Actor 体系外的线程安全。
+**持久化** 使用 **SwiftData**。单个 `@Model` 类型 `BookRecord` 同时承载历史与下载两份列表，通过 `(typeValue, gid)` 上的 `#Unique` 约束区分。`DBManager` 使用并发 `DispatchQueue` 配合 barrier 标志——读操作并发执行，写操作串行化——确保 Actor 体系外的线程安全，同时由一条专用串行队列独占 `ModelContext`。
 
 **身份认证** 将 E-Hentai 会话 Cookie 存储在 `HTTPCookieStorage` 中，与 Alamofire 和 Kingfisher 会话共享。Cookie 变更通过 `NotificationCenter` 被监听，`SettingManager` 据此响应式更新登录状态 UI。
 
@@ -148,14 +148,14 @@ EMHenTai 采用 **MVVM 架构**，配合一组**单例 Manager** 处理核心业
 | 类别 | 技术方案 |
 |------|---------|
 | 编程语言 | Swift 5 |
-| 最低支持 | iOS 17.0 |
+| 最低支持 | iOS 18.0 |
 | UI 框架 | UIKit（纯代码） |
 | 架构模式 | MVVM + 单例 Manager |
 | 并发模型 | Swift Actors + async/await + GCD |
 | 响应式 | Combine |
 | 网络库 | Alamofire |
 | 图片缓存 | Kingfisher |
-| 持久化 | CoreData |
+| 持久化 | SwiftData |
 | 身份认证 | WebKit + HTTPCookieStorage |
 | 国际化 | NSLocalizedString + JSON 标签数据库 |
 | 包管理 | Swift Package Manager |
@@ -184,7 +184,7 @@ graph TD
 
     subgraph External["外部依赖"]
         API["E-Hentai / ExHentai API"]
-        CD[(CoreData)]
+        CD[(SwiftData)]
         JSON["标签翻译 JSON"]
     end
 
@@ -204,7 +204,7 @@ graph TD
 
     SM -->|"gdata JSON + HTML 解析"| API
     DM -->|"HTML 解析 + 图片下载"| API
-    DB -->|"NSManagedObject 增删改查"| CD
+    DB -->|"ModelContext 增删改查"| CD
     SetM -.->|"HTTPCookie 同步"| API
     TM -.->|"启动时加载"| JSON
     TM -.->|"标签查询"| BookList
@@ -213,7 +213,7 @@ graph TD
 - **主数据流** — 用户浏览主页标签 → `BookListViewModel` 触发 `SearchManager` → Actor 隔离的搜索通过 Alamofire 请求 E-Hentai 的 `gdata` API → 解析后的 `Book` 结构体通过 Combine 的 `PassthroughSubject` 回传 → ViewModel 更新 `@Published books` → `DiffableDataSource` 动画刷新列表。
 - **下载流水线** — 点击画廊推入 `GalleryViewController`，调用 `DownloadManager.download()`。Actor 将页面按每 40 张分组，通过 `TaskGroup` 并行请求每组的 HTML。通过字符串解析提取图片 URL 后并发下载，每张图片的下载进度通过 Combine 发布。下载完成的图片保存至 `Documents/<gid>/`。
 - **认证边界** — `SettingManager` 管理 `HTTPCookieStorage`（与 Alamofire/Kingfisher 共享）和 `WKWebsiteDataStore`（登录 WebView 使用）中的 Cookie。Cookie 变更触发 `NotificationCenter` 事件，`SettingManager` 将其转换为 `CurrentValueSubject<Bool>` 登录状态，供设置页 UI 和搜索校验逻辑消费。
-- **持久化层** — `DBManager` 维护内存中的 `[DBType: [Book]]` 缓存，与 CoreData `NSPersistentContainer` 后台上下文同步。并发 `DispatchQueue` 配合 `.barrier` 标志确保读写安全，不阻塞主线程。
+- **持久化层** — `DBManager` 维护内存中的 `[DBType: [Book]]` 缓存，与 SwiftData `ModelContainer` 同步。并发 `DispatchQueue` 配合 `.barrier` 标志保护缓存，另一条串行队列独占非 `Sendable` 的 `ModelContext`，磁盘写入不阻塞主线程。
 - **标签翻译** — `TranslateManager` 在启动时加载内置的 JSON 数据库（来自 [EhTagTranslation](https://github.com/EhTagTranslation/Database)），构建英中双向查找字典，为全应用提供即时标签翻译。
 
 ### 项目结构
@@ -234,14 +234,13 @@ EMHenTai/
 |   |   |-- Manager/                        # 核心业务逻辑
 |   |   |   |-- SearchManager.swift         # 画廊搜索（actor）
 |   |   |   |-- DownloadManager.swift       # 并行图片下载（actor）
-|   |   |   |-- DBManager.swift             # CoreData 持久化
+|   |   |   |-- DBManager.swift             # SwiftData 持久化
 |   |   |   |-- SettingManager.swift        # 认证、Cookie 与偏好设置
 |   |   |   `-- TranslateManager.swift      # 标签中英互译
-|   |   |-- Model/                          # Book、SearchInfo 数据结构
+|   |   |-- Model/                          # Book、SearchInfo 与 BookRecord（@Model）
 |   |   `-- Tools/                          # Swift 扩展与工具方法
 |   `-- Support/
 |       |-- Assets.xcassets/                # 应用图标与图片资源
-|       |-- EMDB.xcdatamodeld/              # CoreData 数据模型
 |       |-- Info.plist
 |       |-- tag-*.json                      # 内置标签翻译数据库
 |       |-- en.lproj/                       # 英文本地化字符串

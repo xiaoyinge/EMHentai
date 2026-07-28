@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/yuman07/EMHentai?style=flat" alt="License"></a>
   <br>
   <img src="https://img.shields.io/badge/Swift-5-F05138?style=flat" alt="Swift 5">
-  <img src="https://img.shields.io/badge/iOS-17.0+-007AFF?style=flat" alt="iOS 17.0+">
+  <img src="https://img.shields.io/badge/iOS-18.0+-007AFF?style=flat" alt="iOS 18.0+">
   <img src="https://img.shields.io/badge/Platform-iPhone%20%7C%20iPad-999999?style=flat" alt="Platform">
 </p>
 
@@ -64,13 +64,13 @@ The app requires no backend server — it communicates directly with E-Hentai's 
 
 > No pre-built IPA is provided due to legal considerations around E-Hentai content. You must build from source using Xcode.
 
-### iOS (17.0+, arm64)
+### iOS (18.0+, arm64)
 
 #### Prerequisites
 
 - A Mac with [Xcode](https://apps.apple.com/app/xcode/id497799835) installed (free from the Mac App Store)
 - An Apple ID (free; needed for code signing)
-- An iPhone or iPad running iOS 17.0 or later
+- An iPhone or iPad running iOS 18.0 or later
 
 #### Steps
 
@@ -139,7 +139,7 @@ EMHenTai follows an **MVVM architecture** with a layer of **singleton managers**
 
 **Networking** uses **Alamofire** with automatic retry policies. Gallery metadata comes from E-Hentai's `gdata` JSON endpoint, while page-level image URLs are extracted by lightweight **HTML string parsing**. **Kingfisher** manages image caching with cookie-aware sessions for seamless ExHentai support.
 
-**Persistence** uses **CoreData** with two entities (`HistoryBook`, `DownloadBook`) sharing identical schemas. `DBManager` wraps a concurrent `DispatchQueue` with barrier flags — reads run concurrently, writes are serialized — ensuring thread safety outside of the actor system.
+**Persistence** uses **SwiftData**. A single `@Model` type, `BookRecord`, backs both the history and download lists, keyed by a `#Unique` constraint on `(typeValue, gid)`. `DBManager` wraps a concurrent `DispatchQueue` with barrier flags — reads run concurrently, writes are serialized — ensuring thread safety outside of the actor system, while a dedicated serial queue owns the `ModelContext`.
 
 **Authentication** stores E-Hentai session cookies in `HTTPCookieStorage`, shared with both Alamofire and Kingfisher sessions. Cookie changes are observed via `NotificationCenter` to reactively update the login state UI.
 
@@ -148,14 +148,14 @@ EMHenTai follows an **MVVM architecture** with a layer of **singleton managers**
 | Category | Technology |
 |----------|-----------|
 | Language | Swift 5 |
-| Minimum Target | iOS 17.0 |
+| Minimum Target | iOS 18.0 |
 | UI Framework | UIKit (programmatic) |
 | Architecture | MVVM + Singleton Managers |
 | Concurrency | Swift Actors + async/await + GCD |
 | Reactive | Combine |
 | Networking | Alamofire |
 | Image Caching | Kingfisher |
-| Persistence | CoreData |
+| Persistence | SwiftData |
 | Authentication | WebKit + HTTPCookieStorage |
 | Localization | NSLocalizedString + JSON tag database |
 | Package Manager | Swift Package Manager |
@@ -184,7 +184,7 @@ graph TD
 
     subgraph External["External"]
         API["E-Hentai / ExHentai API"]
-        CD[(CoreData)]
+        CD[(SwiftData)]
         JSON["Tag Translation JSON"]
     end
 
@@ -204,7 +204,7 @@ graph TD
 
     SM -->|"gdata JSON + HTML scrape"| API
     DM -->|"HTML parse + image fetch"| API
-    DB -->|"NSManagedObject CRUD"| CD
+    DB -->|"ModelContext CRUD"| CD
     SetM -.->|"HTTPCookie sync"| API
     TM -.->|"load at launch"| JSON
     TM -.->|"tag lookup"| BookList
@@ -213,7 +213,7 @@ graph TD
 - **Main data flow** — User browses the home tab → `BookListViewModel` triggers `SearchManager` → actor-isolated search sends an Alamofire request to E-Hentai's `gdata` API → parsed `Book` structs flow back via Combine's `PassthroughSubject` → ViewModel updates `@Published books` → `DiffableDataSource` animates the table view.
 - **Download pipeline** — Tapping a gallery pushes `GalleryViewController`, which calls `DownloadManager.download()`. The actor splits pages into groups of 40 and fetches each group's HTML in parallel via `TaskGroup`. Image URLs are extracted by string parsing and downloaded concurrently, with per-page progress published via Combine. Completed images are persisted to `Documents/<gid>/`.
 - **Authentication boundary** — `SettingManager` manages cookies across both `HTTPCookieStorage` (shared with Alamofire/Kingfisher) and `WKWebsiteDataStore` (used by the login WebView). Cookie changes trigger a `NotificationCenter` event, which `SettingManager` re-evaluates into a `CurrentValueSubject<Bool>` login state consumed by the Settings UI and search validation.
-- **Persistence layer** — `DBManager` maintains an in-memory `[DBType: [Book]]` cache synchronized with a CoreData `NSPersistentContainer` background context. A concurrent `DispatchQueue` with `.barrier` flags ensures safe reads/writes without blocking the main thread.
+- **Persistence layer** — `DBManager` maintains an in-memory `[DBType: [Book]]` cache synchronized with a SwiftData `ModelContainer`. A concurrent `DispatchQueue` with `.barrier` flags guards the cache while a serial queue confines the non-`Sendable` `ModelContext`, so disk writes never block the main thread.
 - **Tag translation** — `TranslateManager` loads a bundled JSON database (from [EhTagTranslation](https://github.com/EhTagTranslation/Database)) at launch, building bidirectional English-Chinese lookup dictionaries for instant tag translation throughout the app.
 
 ### Project Structure
@@ -234,14 +234,13 @@ EMHenTai/
 |   |   |-- Manager/                        # Core business logic
 |   |   |   |-- SearchManager.swift         # Gallery search (actor)
 |   |   |   |-- DownloadManager.swift       # Parallel image download (actor)
-|   |   |   |-- DBManager.swift             # CoreData persistence
+|   |   |   |-- DBManager.swift             # SwiftData persistence
 |   |   |   |-- SettingManager.swift        # Auth, cookies & preferences
 |   |   |   `-- TranslateManager.swift      # Tag EN<>CN translation
-|   |   |-- Model/                          # Book, SearchInfo data structs
+|   |   |-- Model/                          # Book, SearchInfo & BookRecord (@Model)
 |   |   `-- Tools/                          # Swift extensions & utilities
 |   `-- Support/
 |       |-- Assets.xcassets/                # App icon & image assets
-|       |-- EMDB.xcdatamodeld/              # CoreData schema
 |       |-- Info.plist
 |       |-- tag-*.json                      # Bundled tag translation database
 |       |-- en.lproj/                       # English localization strings

@@ -31,10 +31,6 @@ final class LoginViewController: WebViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    deinit {
-        challengeCheckWorkItem?.cancel()
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false

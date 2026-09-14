@@ -14,6 +14,7 @@ final class BookListFooterView: UIView {
         case noData
         case noMoreData
         case netError(detail: String?)
+        case parseError(detail: String?)
         case ipError
         case unreachable
         case blocked
@@ -28,6 +29,9 @@ final class BookListFooterView: UIView {
             case .noMoreData: return "footer.no_more".localized
             case .netError(let detail):
                 let base = "footer.net_error".localized
+                return detail.map { "\(base) (\($0))" } ?? base
+            case .parseError(let detail):
+                let base = "footer.parse_error".localized
                 return detail.map { "\(base) (\($0))" } ?? base
             case .ipError: return "footer.ip_error".localized
             case .unreachable: return "footer.unreachable".localized
@@ -48,7 +52,7 @@ final class BookListFooterView: UIView {
     /// so tapping an error hint presents the full text plus the build tag in an alert.
     private var isErrorHint: Bool {
         switch hint {
-        case .netError, .ipError, .unreachable, .blocked, .serverError, .exDenied: return true
+        case .netError, .parseError, .ipError, .unreachable, .blocked, .serverError, .exDenied: return true
         default: return false
         }
     }

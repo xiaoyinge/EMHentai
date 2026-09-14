@@ -86,6 +86,8 @@ final class BookListViewModel {
             switch error {
             case .netError(let detail):
                 hint = .netError(detail: detail)
+            case .parseError(let detail):
+                hint = .parseError(detail: detail)
             case .ipError:
                 hint = .ipError
             case .unreachable:

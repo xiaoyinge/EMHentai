@@ -70,6 +70,7 @@
 "footer.no_data" = "无数据";
 "footer.no_more" = "没有更多了";
 "footer.net_error" = "网络错误：请检查网络连接或VPN设置";
+"footer.parse_error" = "返回内容无法解析：站点或代理返回了异常数据，请稍后重试或更换节点";
 "footer.unreachable" = "当前网络无法连接 exhentai.org，请在代理规则中添加 exhentai.org";
 "footer.blocked" = "被 Cloudflare 拦截(403)，请更换代理节点或改用 Cookie 登录";
 "footer.ip_error" = "IP错误：IP地址被禁，请尝试更换节点";

@@ -25,6 +25,8 @@ final class SearchManager {
         /// Transport/parse failure that is not otherwise classified. `detail` carries the raw
         /// underlying error (e.g. "code -1006") so a user screenshot pinpoints the real cause.
         case netError(detail: String?)
+        /// The response arrived but its body could not be turned into the expected shape.
+        case parseError(detail: String?)
         case ipError
         /// The site host itself is unreachable from this network (missing proxy rule / GFW).
         case unreachable
@@ -71,7 +73,13 @@ final class SearchManager {
         let value: String
         switch pageResult {
         case .success(let v): value = v
-        case .failure(let e): return .failure(Self.classify(e))
+        case .failure(let e):
+            // Cookieless ExHentai visitors are bounced to the sad-panda gate, which serves a
+            // binary image body: string serialization chokes on it. That is an access problem.
+            if info.source == .ExHentai, Self.isSadPanda(response: pageRequest.response, error: e) {
+                return .failure(.exDenied)
+            }
+            return .failure(Self.classify(e))
         }
         // ExHentai bounces cookieless visitors (missing igneous) to the forums' sad-panda
         // page: that is an access problem, not "no search results".
@@ -84,6 +92,9 @@ final class SearchManager {
             return .failure(.serverError)
         }
         guard !value.contains(Error.ipBanner) else { return .failure(.ipError) }
+        if info.source == .ExHentai, value.range(of: "sadpanda", options: .caseInsensitive) != nil {
+            return .failure(.exDenied)
+        }
         
         let ids = value
             .allSubString(of: info.source.rawValue + "g/", endCharater: "/", count: 2)
@@ -113,6 +124,14 @@ final class SearchManager {
         return .success((metadata.gmetadata ?? []).compactMap({ Book($0) }))
     }
     
+    /// ExHentai gates cookieless visitors behind the sad-panda asset: either an image body
+    /// (which fails string serialization) or a stub page mentioning "sadpanda".
+    nonisolated private static func isSadPanda(response: HTTPURLResponse?, error: AFError) -> Bool {
+        if let mime = response?.mimeType, mime.hasPrefix("image/") { return true }
+        if case .responseSerializationFailed = error { return true }
+        return false
+    }
+
     /// Map a transport failure to a user-actionable error: distinguishing "host unreachable
     /// from this network" (missing proxy rule) from a Cloudflare refusal (403) from plain
     /// network flakiness.
@@ -127,9 +146,11 @@ final class SearchManager {
                 return .netError(detail: "code \(urlError.code.rawValue)")
             }
         }
-        if case let .responseSerializationFailed(reason) = error,
-           case let .decodingFailed(decodingError) = reason {
-            return .netError(detail: brief(String(describing: decodingError)))
+        if case let .responseSerializationFailed(reason) = error {
+            if case let .decodingFailed(decodingError) = reason {
+                return .parseError(detail: brief(String(describing: decodingError)))
+            }
+            return .parseError(detail: brief(String(describing: error)))
         }
         // Detail must never be nil: its presence is how we tell "v6 screenshot" from "old
         // build screenshot" when a user reports the generic network-error text.

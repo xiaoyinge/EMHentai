@@ -17,7 +17,7 @@ let browserUserAgent: String = {
 }()
 
 /// Bump on every release: lets a user screenshot be attributed to an exact build.
-let appVersionTag = "v6"
+let appVersionTag = "v7"
 
 let emSession: Session = {
     let configuration = URLSessionConfiguration.af.default

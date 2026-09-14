@@ -45,6 +45,7 @@
 "setting.enter_cookie" = "请在此输入Cookie";
 "setting.submit" = "提交";
 "setting.login_load_failed" = "登录页面加载失败，请检查网络后重试，或改用 Cookie 登录。";
+"login.cf_challenge_failed" = "Cloudflare 人机验证无法完成：验证组件 challenges.cloudflare.com 加载失败，常见原因是代理规则拦截了该域名。\n\n请在代理工具中将 challenges.cloudflare.com 设为直连（或更换节点、关闭去广告/拦截模块）后重试；也可以改用「输入 Cookie」登录。";
 "setting.retry" = "重试";
 "setting.clear_other_message" = "确定要清除其他数据吗？\n（包含如封面图等数据）";
 

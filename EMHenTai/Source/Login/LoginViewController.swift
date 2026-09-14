@@ -17,6 +17,8 @@ final class LoginViewController: WebViewController {
     private let activityIndicator = UIActivityIndicatorView(style: .large)
     private var didDetectLogin = false
     private var didVisitExhentai = false
+    private var challengeCheckWorkItem: DispatchWorkItem?
+    private var challengeChecksLeft = 0
 
     init() {
         super.init(url: LoginViewController.loginEntryURL)
@@ -85,6 +87,7 @@ extension LoginViewController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         activityIndicator.stopAnimating()
+        startChallengeFailureCheck()
         webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
             guard let self else { return }
             cookies.forEach {
@@ -111,12 +114,57 @@ extension LoginViewController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: any Error) {
         activityIndicator.stopAnimating()
+        challengeCheckWorkItem?.cancel()
         handleLoadFailure()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: any Error) {
         activityIndicator.stopAnimating()
+        challengeCheckWorkItem?.cancel()
         handleLoadFailure()
+    }
+
+    deinit {
+        challengeCheckWorkItem?.cancel()
+    }
+
+    /// Cloudflare's challenge interstitial needs `challenges.cloudflare.com`; when the user's
+    /// proxy rules block that host the interstitial can never complete and just sits there.
+    /// Poll the rendered page text and surface actionable guidance once the failure banner
+    /// (which mentions the host in its steps) appears.
+    private func startChallengeFailureCheck() {
+        challengeCheckWorkItem?.cancel()
+        challengeChecksLeft = 15
+        scheduleChallengeFailureCheck()
+    }
+
+    private func scheduleChallengeFailureCheck() {
+        guard challengeChecksLeft > 0 else { return }
+        challengeChecksLeft -= 1
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, self.webView.url != nil else { return }
+            self.webView.evaluateJavaScript("document.body ? document.body.innerText : ''") { [weak self] value, _ in
+                guard let self else { return }
+                guard let text = value as? String, text.contains("challenges.cloudflare.com") else {
+                    self.scheduleChallengeFailureCheck()
+                    return
+                }
+                self.challengeCheckWorkItem = nil
+                self.presentChallengeFailedAlert()
+            }
+        }
+        challengeCheckWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: work)
+    }
+
+    private func presentChallengeFailedAlert() {
+        guard presentedViewController == nil else { return }
+        let vc = UIAlertController(title: "alert.warning".localized, message: "login.cf_challenge_failed".localized, preferredStyle: .alert)
+        vc.addAction(UIAlertAction(title: "setting.retry".localized, style: .default, handler: { [weak self] _ in
+            self?.webView.reload()
+        }))
+        vc.addAction(UIAlertAction(title: "alert.ok".localized, style: .cancel))
+        present(vc, animated: true)
     }
 
     /// Failing to fetch the igneous cookie (exhentai.org is unreachable on some networks)

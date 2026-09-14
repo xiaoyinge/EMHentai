@@ -45,6 +45,7 @@
 "setting.enter_cookie" = "Enter your Cookie here";
 "setting.submit" = "Submit";
 "setting.login_load_failed" = "The login page failed to load. Please check your network and retry, or use Cookie login instead.";
+"login.cf_challenge_failed" = "The Cloudflare challenge cannot complete: its component challenges.cloudflare.com failed to load, usually because a proxy rule blocks that host.\n\nSet challenges.cloudflare.com to DIRECT in your proxy app (or switch nodes / disable ad-block rules) and retry, or use Cookie login instead.";
 "setting.retry" = "Retry";
 "setting.clear_other_message" = "Are you sure you want to clear other data?\n(Including cover images, etc.)";
 

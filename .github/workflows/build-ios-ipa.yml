@@ -1,0 +1,40 @@
+name: Build iOS IPA (unsigned)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build (no code signing)
+        run: |
+          xcodebuild \
+            -project EMHenTai.xcodeproj \
+            -scheme EMHenTai \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ./build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          APP=$(find ./build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          echo "Packaging $APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry EMHenTai-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EMHenTai-unsigned-ipa
+          path: EMHenTai-unsigned.ipa

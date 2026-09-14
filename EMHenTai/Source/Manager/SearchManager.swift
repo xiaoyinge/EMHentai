@@ -7,6 +7,7 @@
 
 import Alamofire
 import Combine
+import Foundation
 
 /// The manager itself lives on the main actor: it only tracks the in-flight task and publishes
 /// events the UI consumes. The request work stays in a `nonisolated` method.
@@ -56,9 +57,9 @@ final class SearchManager {
     }
     
     private nonisolated func startSearchWith(info: SearchInfo) async -> Result<[Book], Error> {
-        let page = await emSession.request(info.requestString, interceptor: RetryPolicy()).serializingString().result
-        guard let value = try? page.get() else {
-            return .failure(Self.classify(page.failure!))
+        let pageResult = await emSession.request(info.requestString, interceptor: RetryPolicy()).serializingString().result
+        guard case .success(let value) = pageResult else {
+            return .failure(Self.classify(pageResult.error!))
         }
         guard !value.contains(Error.ipError.rawValue) else { return .failure(.ipError) }
         
@@ -68,7 +69,7 @@ final class SearchManager {
             .filter { $0.count == 2 }
         guard !ids.isEmpty else { return .success([]) }
         
-        let api = await emSession
+        let apiResult = await emSession
             .request(
                 info.source.rawValue + "api.php",
                 method: .post,
@@ -78,7 +79,9 @@ final class SearchManager {
             )
             .serializingDecodable(Gmetadata.self)
             .result
-        guard let value = try? api.get() else { return .failure(Self.classify(api.failure!)) }
+        guard case .success(let value) = apiResult else {
+            return .failure(Self.classify(apiResult.error!))
+        }
         
         return .success((value.gmetadata ?? []).compactMap({ Book($0) }))
     }

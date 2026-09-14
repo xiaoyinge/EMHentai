@@ -9,7 +9,7 @@ import Foundation
 
 extension SearchInfo {
     var requestString: String {
-        var url = source.rawValue + "/?"
+        var url = source.rawValue + "?"
         url += "f_search=\((keyWord + language.rawValue).components(separatedBy: " ").map({ TranslateManager.shared.translateCn($0) }).joined(separator: "+"))"
         Category.allCases.forEach { url += "&f_\($0.rawValue)=\(categories.contains($0) ? 1 : 0)" }
         if !lastGid.isEmpty { url += "&next=\(lastGid)" }

@@ -72,6 +72,8 @@
 "footer.unreachable" = "exhentai.org is unreachable on this network. Add exhentai.org to your proxy rules.";
 "footer.blocked" = "Blocked by Cloudflare (403). Try another proxy node or Cookie login.";
 "footer.ip_error" = "IP error: IP banned, please try another node";
+"footer.server_error" = "Server error, try again later or switch proxy nodes";
+"footer.ex_denied" = "ExHentai denied access: igneous credential missing or no ExHentai permission. Re-login in Settings.";
 
 /* Tag */
 "tag.select_title" = "Select tags to search";

@@ -72,6 +72,8 @@
 "footer.unreachable" = "当前网络无法连接 exhentai.org，请在代理规则中添加 exhentai.org";
 "footer.blocked" = "被 Cloudflare 拦截(403)，请更换代理节点或改用 Cookie 登录";
 "footer.ip_error" = "IP错误：IP地址被禁，请尝试更换节点";
+"footer.server_error" = "服务器错误，请稍后重试或更换代理节点";
+"footer.ex_denied" = "ExHentai 拒绝访问：igneous 凭证缺失或账号无里站权限，请到设置中重新登录";
 
 /* Tag */
 "tag.select_title" = "选择相关Tag进行搜索";

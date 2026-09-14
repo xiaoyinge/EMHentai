@@ -13,10 +13,12 @@ final class BookListFooterView: UIView {
         case loading
         case noData
         case noMoreData
-        case netError
+        case netError(detail: String?)
         case ipError
         case unreachable
         case blocked
+        case serverError
+        case exDenied
 
         var title: String {
             switch self {
@@ -24,10 +26,14 @@ final class BookListFooterView: UIView {
             case .loading: return "footer.loading".localized
             case .noData: return "footer.no_data".localized
             case .noMoreData: return "footer.no_more".localized
-            case .netError: return "footer.net_error".localized
+            case .netError(let detail):
+                let base = "footer.net_error".localized
+                return detail.map { "\(base) (\($0))" } ?? base
             case .ipError: return "footer.ip_error".localized
             case .unreachable: return "footer.unreachable".localized
             case .blocked: return "footer.blocked".localized
+            case .serverError: return "footer.server_error".localized
+            case .exDenied: return "footer.ex_denied".localized
             }
         }
     }

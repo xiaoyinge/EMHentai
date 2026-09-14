@@ -18,13 +18,22 @@ final class SearchManager {
         case finish(info: SearchInfo, result: Result<[Book], SearchManager.Error>)
     }
     
-    enum Error: String, Swift.Error {
-        case netError
-        case ipError = "Your IP address has been temporarily banned for excessive pageloads"
+    enum Error: Swift.Error {
+        /// Banner text the site serves when the IP is hard-banned.
+        static let ipBanner = "Your IP address has been temporarily banned for excessive pageloads"
+
+        /// Transport/parse failure that is not otherwise classified. `detail` carries the raw
+        /// underlying error (e.g. "code -1006") so a user screenshot pinpoints the real cause.
+        case netError(detail: String?)
+        case ipError
         /// The site host itself is unreachable from this network (missing proxy rule / GFW).
         case unreachable
         /// Cloudflare refused the request outright (403).
         case blocked
+        /// Origin or proxy answered 5xx.
+        case serverError
+        /// ExHentai bounced us off exhentai.org: igneous credential missing or no site access.
+        case exDenied
     }
     
     static let shared = SearchManager()
@@ -57,13 +66,24 @@ final class SearchManager {
     }
     
     private nonisolated func startSearchWith(info: SearchInfo) async -> Result<[Book], Error> {
-        let pageResult = await emSession.request(info.requestString, interceptor: RetryPolicy()).serializingString().result
+        let pageRequest = emSession.request(info.requestString, interceptor: RetryPolicy())
+        let pageResult = await pageRequest.serializingString().result
         let value: String
         switch pageResult {
         case .success(let v): value = v
         case .failure(let e): return .failure(Self.classify(e))
         }
-        guard !value.contains(Error.ipError.rawValue) else { return .failure(.ipError) }
+        // ExHentai bounces cookieless visitors (missing igneous) to the forums' sad-panda
+        // page: that is an access problem, not "no search results".
+        if info.source == .ExHentai,
+           let host = pageRequest.response?.url?.host,
+           !host.hasSuffix("exhentai.org") {
+            return .failure(.exDenied)
+        }
+        if let statusCode = pageRequest.response?.statusCode, statusCode >= 500 {
+            return .failure(.serverError)
+        }
+        guard !value.contains(Error.ipBanner) else { return .failure(.ipError) }
         
         let ids = value
             .allSubString(of: info.source.rawValue + "g/", endCharater: "/", count: 2)
@@ -71,7 +91,7 @@ final class SearchManager {
             .filter { $0.count == 2 }
         guard !ids.isEmpty else { return .success([]) }
         
-        let apiResult = await emSession
+        let apiRequest = emSession
             .request(
                 info.source.rawValue + "api.php",
                 method: .post,
@@ -79,12 +99,15 @@ final class SearchManager {
                 encoding: JSONEncoding.default,
                 interceptor: RetryPolicy()
             )
-            .serializingDecodable(Gmetadata.self)
-            .result
+        let apiResult = await apiRequest.serializingDecodable(Gmetadata.self).result
         let metadata: Gmetadata
         switch apiResult {
         case .success(let v): metadata = v
-        case .failure(let e): return .failure(Self.classify(e))
+        case .failure(let e):
+            if let statusCode = apiRequest.response?.statusCode, statusCode >= 500 {
+                return .failure(.serverError)
+            }
+            return .failure(Self.classify(e))
         }
         
         return .success((metadata.gmetadata ?? []).compactMap({ Book($0) }))
@@ -97,13 +120,22 @@ final class SearchManager {
         if let code = error.responseCode, code == 403 || code == 429 { return .blocked }
         if let urlError = error.underlyingError as? URLError {
             switch urlError.code {
-            case .cannotFindHost, .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet, .timedOut:
+            case .cannotFindHost, .dnsLookupFailed, .cannotConnectToHost, .networkConnectionLost,
+                 .notConnectedToInternet, .timedOut, .secureConnectionFailed, .serverCertificateUntrusted:
                 return .unreachable
             default:
-                break
+                return .netError(detail: "code \(urlError.code.rawValue)")
             }
         }
-        return .netError
+        if case let .responseSerializationFailed(reason) = error,
+           case let .decodingFailed(decodingError) = reason {
+            return .netError(detail: brief(String(describing: decodingError)))
+        }
+        return .netError(detail: error.underlyingError.map { brief(String(describing: $0)) })
+    }
+
+    private static func brief(_ text: String) -> String {
+        text.count > 120 ? String(text.prefix(120)) + "…" : text
     }
 }
 

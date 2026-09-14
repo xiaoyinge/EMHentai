@@ -84,14 +84,18 @@ final class BookListViewModel {
         case .failure(let error):
             if (info.lastGid.isEmpty) { books = [] }
             switch error {
-            case .netError:
-                hint = .netError
+            case .netError(let detail):
+                hint = .netError(detail: detail)
             case .ipError:
                 hint = .ipError
             case .unreachable:
                 hint = .unreachable
             case .blocked:
                 hint = .blocked
+            case .serverError:
+                hint = .serverError
+            case .exDenied:
+                hint = .exDenied
             }
         }
     }

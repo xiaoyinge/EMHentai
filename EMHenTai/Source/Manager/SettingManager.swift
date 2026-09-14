@@ -119,7 +119,10 @@ final class SettingManager {
         let currentDate = Date()
         var validFlags = (false, false, false)
         for cookie in cookies {
-            guard let expiresDate = cookie.expiresDate, expiresDate > currentDate else { continue }
+            // Session cookies (expiresDate == nil) are valid too: the forums login form
+            // issues them when "remember me" is not ticked, and exhentai's igneous is
+            // always a session cookie.
+            if let expiresDate = cookie.expiresDate, expiresDate <= currentDate { continue }
             if cookie.name == "ipb_member_id" { validFlags.0 = isValidID(cookie.value) }
             if cookie.name == "ipb_pass_hash" { validFlags.1 = isValidID(cookie.value) }
             if cookie.name == "igneous" { validFlags.2 = isValidID(cookie.value) }

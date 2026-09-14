@@ -44,6 +44,8 @@
 "setting.login" = "登录";
 "setting.enter_cookie" = "请在此输入Cookie";
 "setting.submit" = "提交";
+"setting.login_load_failed" = "登录页面加载失败，请检查网络后重试，或改用 Cookie 登录。";
+"setting.retry" = "重试";
 "setting.clear_other_message" = "确定要清除其他数据吗？\n（包含如封面图等数据）";
 
 /* Search */

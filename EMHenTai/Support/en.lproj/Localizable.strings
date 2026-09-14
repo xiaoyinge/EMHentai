@@ -44,6 +44,8 @@
 "setting.login" = "Login";
 "setting.enter_cookie" = "Enter your Cookie here";
 "setting.submit" = "Submit";
+"setting.login_load_failed" = "The login page failed to load. Please check your network and retry, or use Cookie login instead.";
+"setting.retry" = "Retry";
 "setting.clear_other_message" = "Are you sure you want to clear other data?\n(Including cover images, etc.)";
 
 /* Search */

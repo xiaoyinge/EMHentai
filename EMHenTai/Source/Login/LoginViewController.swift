@@ -86,7 +86,7 @@ extension LoginViewController: WKNavigationDelegate {
         guard cookie.expiresDate == nil, loginCookieNames.contains(cookie.name),
               let properties = cookie.properties else { return nil }
         var mutable = properties
-        mutable[.expiresDate] = Date(timeIntervalSinceNow: 31_536_000)
+        mutable[.expires] = Date(timeIntervalSinceNow: 31_536_000)
         return HTTPCookie(properties: mutable)
     }
 

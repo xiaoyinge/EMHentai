@@ -78,11 +78,26 @@ extension LoginViewController: WKNavigationDelegate {
         activityIndicator.startAnimating()
     }
 
+    private static let loginCookieNames: Set<String> = ["ipb_member_id", "ipb_pass_hash", "igneous"]
+
+    /// WKWebView hands over session cookies (no expiry) for the login state; HTTPCookieStorage
+    /// drops those on app termination, so re-issue them with a far-future expiry to persist.
+    private static func persist(_ cookie: HTTPCookie) -> HTTPCookie? {
+        guard cookie.expiresDate == nil, loginCookieNames.contains(cookie.name),
+              let properties = cookie.properties else { return nil }
+        var mutable = properties
+        mutable[.expiresDate] = Date(timeIntervalSinceNow: 31_536_000)
+        return HTTPCookie(properties: mutable)
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         activityIndicator.stopAnimating()
         webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
             guard let self else { return }
-            cookies.forEach { HTTPCookieStorage.shared.setCookie($0) }
+            cookies.forEach {
+                HTTPCookieStorage.shared.setCookie($0)
+                if let persistent = Self.persist($0) { HTTPCookieStorage.shared.setCookie(persistent) }
+            }
 
             if !self.didDetectLogin {
                 guard Self.hasSignedIn(cookies) else { return }
@@ -103,11 +118,21 @@ extension LoginViewController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: any Error) {
         activityIndicator.stopAnimating()
-        presentRetryAlert()
+        handleLoadFailure()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: any Error) {
         activityIndicator.stopAnimating()
+        handleLoadFailure()
+    }
+
+    /// Failing to fetch the igneous cookie (exhentai.org is unreachable on some networks)
+    /// is not a login failure: the session is already valid on e-hentai, so just leave.
+    private func handleLoadFailure() {
+        if didDetectLogin {
+            navigationController?.popViewController(animated: true)
+            return
+        }
         presentRetryAlert()
     }
 

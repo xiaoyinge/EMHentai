@@ -126,7 +126,9 @@ final class SettingManager {
             if cookie.name == "ipb_member_id" { validFlags.0 = isValidID(cookie.value) }
             if cookie.name == "ipb_pass_hash" { validFlags.1 = isValidID(cookie.value) }
             if cookie.name == "igneous" { validFlags.2 = isValidID(cookie.value) }
-            if validFlags == (true, true, true) { return true }
+            // igneous only unlocks ExHentai and is fetched opportunistically; the
+            // account itself is signed in once the two forum cookies are present.
+            if validFlags.0 && validFlags.1 { return true }
         }
         return false
     }

@@ -58,8 +58,10 @@ final class SearchManager {
     
     private nonisolated func startSearchWith(info: SearchInfo) async -> Result<[Book], Error> {
         let pageResult = await emSession.request(info.requestString, interceptor: RetryPolicy()).serializingString().result
-        guard case .success(let value) = pageResult else {
-            return .failure(Self.classify(pageResult.error!))
+        let value: String
+        switch pageResult {
+        case .success(let v): value = v
+        case .failure(let e): return .failure(Self.classify(e))
         }
         guard !value.contains(Error.ipError.rawValue) else { return .failure(.ipError) }
         
@@ -79,11 +81,13 @@ final class SearchManager {
             )
             .serializingDecodable(Gmetadata.self)
             .result
-        guard case .success(let value) = apiResult else {
-            return .failure(Self.classify(apiResult.error!))
+        let metadata: Gmetadata
+        switch apiResult {
+        case .success(let v): metadata = v
+        case .failure(let e): return .failure(Self.classify(e))
         }
         
-        return .success((value.gmetadata ?? []).compactMap({ Book($0) }))
+        return .success((metadata.gmetadata ?? []).compactMap({ Book($0) }))
     }
     
     /// Map a transport failure to a user-actionable error: distinguishing "host unreachable

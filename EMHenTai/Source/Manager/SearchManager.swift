@@ -134,7 +134,7 @@ final class SearchManager {
         return .netError(detail: error.underlyingError.map { brief(String(describing: $0)) })
     }
 
-    private static func brief(_ text: String) -> String {
+    nonisolated private static func brief(_ text: String) -> String {
         text.count > 120 ? String(text.prefix(120)) + "…" : text
     }
 }

@@ -131,7 +131,9 @@ final class SearchManager {
            case let .decodingFailed(decodingError) = reason {
             return .netError(detail: brief(String(describing: decodingError)))
         }
-        return .netError(detail: error.underlyingError.map { brief(String(describing: $0)) })
+        // Detail must never be nil: its presence is how we tell "v6 screenshot" from "old
+        // build screenshot" when a user reports the generic network-error text.
+        return .netError(detail: error.underlyingError.map { brief(String(describing: $0)) } ?? brief(String(describing: error)))
     }
 
     nonisolated private static func brief(_ text: String) -> String {

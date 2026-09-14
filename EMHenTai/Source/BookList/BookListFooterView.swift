@@ -43,6 +43,26 @@ final class BookListFooterView: UIView {
             label.text = hint.title
         }
     }
+
+    /// Error hints can be long (raw error descriptions); the one-line label may truncate,
+    /// so tapping an error hint presents the full text plus the build tag in an alert.
+    private var isErrorHint: Bool {
+        switch hint {
+        case .netError, .ipError, .unreachable, .blocked, .serverError, .exDenied: return true
+        default: return false
+        }
+    }
+
+    @objc private func didTapHint() {
+        guard isErrorHint else { return }
+        var responder: UIResponder? = self
+        while responder != nil, !(responder is UIViewController) {
+            responder = responder?.next
+        }
+        let alert = UIAlertController(title: "EMHenTai \(appVersionTag)", message: hint.title, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "alert.ok".localized, style: .default))
+        (responder as? UIViewController)?.present(alert, animated: true)
+    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -64,7 +84,8 @@ final class BookListFooterView: UIView {
     private func setupUI() {
         frame = CGRect(x: 0, y: 0, width: 0, height: ceil(label.font.lineHeight) + 20)
         addSubview(label)
-        
+        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTapHint)))
+
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: centerXAnchor),
             label.centerYAnchor.constraint(equalTo: centerYAnchor),

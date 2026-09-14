@@ -31,6 +31,10 @@ final class LoginViewController: WebViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    deinit {
+        challengeCheckWorkItem?.cancel()
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
@@ -122,10 +126,6 @@ extension LoginViewController: WKNavigationDelegate {
         activityIndicator.stopAnimating()
         challengeCheckWorkItem?.cancel()
         handleLoadFailure()
-    }
-
-    deinit {
-        challengeCheckWorkItem?.cancel()
     }
 
     /// Cloudflare's challenge interstitial needs `challenges.cloudflare.com`; when the user's

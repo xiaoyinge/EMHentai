@@ -15,6 +15,8 @@ final class BookListFooterView: UIView {
         case noMoreData
         case netError
         case ipError
+        case unreachable
+        case blocked
 
         var title: String {
             switch self {
@@ -24,6 +26,8 @@ final class BookListFooterView: UIView {
             case .noMoreData: return "footer.no_more".localized
             case .netError: return "footer.net_error".localized
             case .ipError: return "footer.ip_error".localized
+            case .unreachable: return "footer.unreachable".localized
+            case .blocked: return "footer.blocked".localized
             }
         }
     }

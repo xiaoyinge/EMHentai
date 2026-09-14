@@ -22,7 +22,7 @@ final class LoginViewController: WebViewController {
         super.init(url: LoginViewController.loginEntryURL)
         webView.navigationDelegate = self
         webView.allowsBackForwardNavigationGestures = false
-        webView.customUserAgent = Self.safariUserAgent()
+        webView.customUserAgent = browserUserAgent
     }
 
     required init?(coder: NSCoder) {
@@ -50,13 +50,6 @@ final class LoginViewController: WebViewController {
     @objc
     private func doneAction() {
         navigationController?.popViewController(animated: true)
-    }
-
-    /// The stock WKWebView UA lacks the `Version/... Safari/...` tokens, which makes
-    /// Cloudflare serve a challenge the web view then fails to render (white screen).
-    private static func safariUserAgent() -> String {
-        let v = ProcessInfo.processInfo.operatingSystemVersion
-        return "Mozilla/5.0 (iPhone; CPU iPhone OS \(v.majorVersion)_\(v.minorVersion)_\(v.patchVersion) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
     }
 
     private static func isValidLoginValue(_ value: String) -> Bool {

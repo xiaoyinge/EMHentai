@@ -88,6 +88,10 @@ final class BookListViewModel {
                 hint = .netError
             case .ipError:
                 hint = .ipError
+            case .unreachable:
+                hint = .unreachable
+            case .blocked:
+                hint = .blocked
             }
         }
     }

@@ -20,6 +20,10 @@ final class SearchManager {
     enum Error: String, Swift.Error {
         case netError
         case ipError = "Your IP address has been temporarily banned for excessive pageloads"
+        /// The site host itself is unreachable from this network (missing proxy rule / GFW).
+        case unreachable
+        /// Cloudflare refused the request outright (403).
+        case blocked
     }
     
     static let shared = SearchManager()
@@ -52,8 +56,9 @@ final class SearchManager {
     }
     
     private nonisolated func startSearchWith(info: SearchInfo) async -> Result<[Book], Error> {
-        guard let value = try? await emSession.request(info.requestString, interceptor: RetryPolicy()).serializingString().value else {
-            return .failure(.netError)
+        let page = await emSession.request(info.requestString, interceptor: RetryPolicy()).serializingString().result
+        guard let value = try? page.get() else {
+            return .failure(Self.classify(page.failure!))
         }
         guard !value.contains(Error.ipError.rawValue) else { return .failure(.ipError) }
         
@@ -63,7 +68,7 @@ final class SearchManager {
             .filter { $0.count == 2 }
         guard !ids.isEmpty else { return .success([]) }
         
-        guard let value = try? await emSession
+        let api = await emSession
             .request(
                 info.source.rawValue + "api.php",
                 method: .post,
@@ -71,11 +76,27 @@ final class SearchManager {
                 encoding: JSONEncoding.default,
                 interceptor: RetryPolicy()
             )
-                .serializingDecodable(Gmetadata.self)
-                .value
-        else { return .failure(.netError) }
+            .serializingDecodable(Gmetadata.self)
+            .result
+        guard let value = try? api.get() else { return .failure(Self.classify(api.failure!)) }
         
         return .success((value.gmetadata ?? []).compactMap({ Book($0) }))
+    }
+    
+    /// Map a transport failure to a user-actionable error: distinguishing "host unreachable
+    /// from this network" (missing proxy rule) from a Cloudflare refusal (403) from plain
+    /// network flakiness.
+    nonisolated static func classify(_ error: AFError) -> Error {
+        if let code = error.responseCode, code == 403 || code == 429 { return .blocked }
+        if let urlError = error.underlyingError as? URLError {
+            switch urlError.code {
+            case .cannotFindHost, .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet, .timedOut:
+                return .unreachable
+            default:
+                break
+            }
+        }
+        return .netError
     }
 }
 

@@ -69,6 +69,8 @@
 "footer.no_data" = "No data";
 "footer.no_more" = "No more data";
 "footer.net_error" = "Network error: Check your connection or VPN settings";
+"footer.unreachable" = "exhentai.org is unreachable on this network. Add exhentai.org to your proxy rules.";
+"footer.blocked" = "Blocked by Cloudflare (403). Try another proxy node or Cookie login.";
 "footer.ip_error" = "IP error: IP banned, please try another node";
 
 /* Tag */

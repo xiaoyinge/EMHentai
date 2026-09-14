@@ -45,6 +45,7 @@
 "setting.enter_cookie" = "Enter your Cookie here";
 "setting.submit" = "Submit";
 "setting.login_load_failed" = "The login page failed to load. Please check your network and retry, or use Cookie login instead.";
+"setting.igneous_failed" = "Signed in, but the ExHentai credential (igneous) could not be obtained: exhentai.org did not load properly (usually because the proxy blocks challenges.cloudflare.com, so the Cloudflare check never completes).\n\nThe ExHentai source is unavailable for now; fix the proxy and retry, or re-login later in Settings.";
 "login.cf_challenge_failed" = "The Cloudflare challenge cannot complete: its component challenges.cloudflare.com failed to load, usually because a proxy rule blocks that host.\n\nSet challenges.cloudflare.com to DIRECT in your proxy app (or switch nodes / disable ad-block rules) and retry, or use Cookie login instead.";
 "setting.retry" = "Retry";
 "setting.clear_other_message" = "Are you sure you want to clear other data?\n(Including cover images, etc.)";
@@ -75,7 +76,7 @@
 "footer.blocked" = "Blocked by Cloudflare (403). Try another proxy node or Cookie login.";
 "footer.ip_error" = "IP error: IP banned, please try another node";
 "footer.server_error" = "Server error, try again later or switch proxy nodes";
-"footer.ex_denied" = "ExHentai denied access: igneous credential missing or no ExHentai permission. Re-login in Settings.";
+"footer.ex_denied" = "ExHentai denied access: the igneous credential is missing or stale. Log out and re-login in Settings (reinstall/node changes invalidate it); if it keeps failing, check whether the proxy blocks challenges.cloudflare.com, or the account may lack ExHentai access";
 
 /* Tag */
 "tag.select_title" = "Select tags to search";

@@ -45,6 +45,7 @@
 "setting.enter_cookie" = "请在此输入Cookie";
 "setting.submit" = "提交";
 "setting.login_load_failed" = "登录页面加载失败，请检查网络后重试，或改用 Cookie 登录。";
+"setting.igneous_failed" = "登录已成功，但里站凭证 igneous 获取失败：exhentai.org 加载异常（常见原因：代理规则拦截了 challenges.cloudflare.com，导致 Cloudflare 验证无法完成）。\n\nExHentai 数据源暂时不可用；请调整代理后重试，或稍后在设置中重新登录。";
 "login.cf_challenge_failed" = "Cloudflare 人机验证无法完成：验证组件 challenges.cloudflare.com 加载失败，常见原因是代理规则拦截了该域名。\n\n请在代理工具中将 challenges.cloudflare.com 设为直连（或更换节点、关闭去广告/拦截模块）后重试；也可以改用「输入 Cookie」登录。";
 "setting.retry" = "重试";
 "setting.clear_other_message" = "确定要清除其他数据吗？\n（包含如封面图等数据）";
@@ -75,7 +76,7 @@
 "footer.blocked" = "被 Cloudflare 拦截(403)，请更换代理节点或改用 Cookie 登录";
 "footer.ip_error" = "IP错误：IP地址被禁，请尝试更换节点";
 "footer.server_error" = "服务器错误，请稍后重试或更换代理节点";
-"footer.ex_denied" = "ExHentai 拒绝访问：igneous 凭证缺失或账号无里站权限，请到设置中重新登录";
+"footer.ex_denied" = "ExHentai 拒绝访问：igneous 凭证缺失或已失效。请到设置中登出后重新登录（重装/换节点会使凭证失效）；若反复失败，请检查代理是否拦截 challenges.cloudflare.com，或账号可能无里站权限";
 
 /* Tag */
 "tag.select_title" = "选择相关Tag进行搜索";

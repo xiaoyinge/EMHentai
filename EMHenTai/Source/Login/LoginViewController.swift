@@ -105,9 +105,11 @@ extension LoginViewController: WKNavigationDelegate {
                 return
             }
             // The exhentai visit redirects through forums/remoteapi, which fires didFinish
-            // for intermediate pages too; only leave once the final exhentai page is shown.
+            // for intermediate pages too; only leave once igneous is actually in the store:
+            // a Cloudflare challenge page on exhentai.org would otherwise pop silently and
+            // leave the user in a "re-login forever" loop.
             if self.didVisitExhentai, webView.url?.host?.hasSuffix("exhentai.org") == true {
-                self.navigationController?.popViewController(animated: true)
+                self.finishExhentaiVisitOrWarn()
             }
         }
     }
@@ -163,14 +165,44 @@ extension LoginViewController: WKNavigationDelegate {
         present(vc, animated: true)
     }
 
-    /// Failing to fetch the igneous cookie (exhentai.org is unreachable on some networks)
-    /// is not a login failure: the session is already valid on e-hentai, so just leave.
+    /// Failing to fetch the igneous cookie used to be silent (v3): the user believed login
+    /// succeeded, then ExHentai kept rejecting them with "re-login" advice - a loop. Surface
+    /// the failure explicitly instead.
     private func handleLoadFailure() {
         if didDetectLogin {
-            navigationController?.popViewController(animated: true)
+            presentIgneousFailedAlert()
             return
         }
         presentRetryAlert()
+    }
+
+    private func finishExhentaiVisitOrWarn() {
+        webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
+            guard let self else { return }
+            let hasIgneous = cookies.contains {
+                $0.name == "igneous"
+                    && $0.domain.hasSuffix("exhentai.org")
+                    && Self.isValidLoginValue($0.value)
+            }
+            if hasIgneous {
+                self.navigationController?.popViewController(animated: true)
+            } else {
+                self.presentIgneousFailedAlert()
+            }
+        }
+    }
+
+    private func presentIgneousFailedAlert() {
+        guard presentedViewController == nil else { return }
+        let vc = UIAlertController(title: "alert.warning".localized, message: "setting.igneous_failed".localized, preferredStyle: .alert)
+        vc.addAction(UIAlertAction(title: "setting.retry".localized, style: .default, handler: { [weak self] _ in
+            guard let self else { return }
+            self.webView.load(URLRequest(url: Self.exhentaiURL))
+        }))
+        vc.addAction(UIAlertAction(title: "alert.ok".localized, style: .cancel, handler: { [weak self] _ in
+            self?.navigationController?.popViewController(animated: true)
+        }))
+        present(vc, animated: true)
     }
 
     private func presentRetryAlert() {
